@@ -19,6 +19,7 @@ public class EnergySourceService {
 
 
     private static final String PREFIXO_CACHE_ENERGYSOURCE= "ens:";
+
     @Autowired
     private EneregySourcesRepository eneregySourcesRepository;
 
