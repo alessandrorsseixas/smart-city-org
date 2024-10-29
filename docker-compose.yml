@@ -6,15 +6,28 @@ services:
     container_name: mongo
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: MongoDB2019!
-      #mongodb://root:MongoDB2019!@localhost:27017
+      MONGO_INITDB_ROOT_PASSWORD: mongo
     ports:
       - "27017:27017"
     volumes:
-      - mongo_data:/home/renatogroffe/Desenvolvimento/Docker/Volumes/MongoDB:/data/db
+      - mongo_data:/data/db
     networks:
       - app_network
-  # Redis
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"         # Porta padrão do RabbitMQ para conexão com clientes
+      - "15672:15672"       # Porta para o plugin de gerenciamento (interface web)
+    environment:
+      RABBITMQ_DEFAULT_USER: guest   # Usuário padrão
+      RABBITMQ_DEFAULT_PASS: guest   # Senha padrão
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq  # Persistência de dados
+    networks:
+      - app_network
+
   redis:
     image: redis:latest
     container_name: redis
@@ -26,13 +39,10 @@ services:
     ports:
       - "6379:6379"
 
-  # Portainer
   portainer:
     image: portainer/portainer-ce:latest
     container_name: portainer
     restart: always
-    networks:
-      - app_network
     volumes:
       - portainer_data:/data
       - /var/run/docker.sock:/var/run/docker.sock
@@ -41,12 +51,17 @@ services:
     depends_on:
       - mongo
       - redis
+      - rabbitmq
+    networks:
+      - app_network
 
 # Volumes
 volumes:
+  rabbitmq_data: {}
   mongo_data: {}
   redis_data: {}
-  portainer_data: {} 
+  portainer_data: {}
+
 # Redes
 networks:
   app_network:
