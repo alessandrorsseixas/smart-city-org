@@ -1,0 +1,77 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{AC3D162E-53FF-4A94-BC69-1E64C6AAD954}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "shared", "shared", "{BFA9AC0E-58F9-4714-9851-F96C0E51D7F0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "common-libraries", "common-libraries", "{41B67F08-01F9-4688-A12C-7C66A51D1D06}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartCity.Shared.Common", "src\shared\common-libraries\SmartCity.Shared.Common\SmartCity.Shared.Common.csproj", "{1D2E38A8-FA89-4F48-B2A7-F171719AC2CC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartCity.Shared.CQRS", "src\shared\common-libraries\SmartCity.Shared.CQRS\SmartCity.Shared.CQRS.csproj", "{E3F79BEB-22B7-4A8A-8CE2-13AB7D8A4940}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartCity.Shared.Infrastructure", "src\shared\common-libraries\SmartCity.Shared.Infrastructure\SmartCity.Shared.Infrastructure.csproj", "{103B94E3-BEE5-4330-AC26-60FA7A15B14F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "services", "services", "{6BD440AB-1A70-4428-B0A7-F639CB2EE0B6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "auth-service", "auth-service", "{B6A05611-A904-4E3D-9DF7-D1934723297F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartCity.AuthService", "src\services\auth-service\SmartCity.AuthService\SmartCity.AuthService.csproj", "{2D8A82CD-3B1D-4E52-8C8B-083D9AE936EF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartCity.AuthService.Tests", "src\services\auth-service\SmartCity.AuthService.Tests\SmartCity.AuthService.Tests.csproj", "{72CF9242-C3E1-413A-9BFC-3B274F4B8055}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "house-control-service", "house-control-service", "{7AA121C9-B2F2-4C20-B29E-538D76648E0F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartCity.HouseControlService", "src\services\house-control-service\SmartCity.HouseControlService\SmartCity.HouseControlService.csproj", "{818DB99B-28DD-4C25-88EA-5655B79A43B2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1D2E38A8-FA89-4F48-B2A7-F171719AC2CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1D2E38A8-FA89-4F48-B2A7-F171719AC2CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1D2E38A8-FA89-4F48-B2A7-F171719AC2CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1D2E38A8-FA89-4F48-B2A7-F171719AC2CC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E3F79BEB-22B7-4A8A-8CE2-13AB7D8A4940}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E3F79BEB-22B7-4A8A-8CE2-13AB7D8A4940}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E3F79BEB-22B7-4A8A-8CE2-13AB7D8A4940}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E3F79BEB-22B7-4A8A-8CE2-13AB7D8A4940}.Release|Any CPU.Build.0 = Release|Any CPU
+		{103B94E3-BEE5-4330-AC26-60FA7A15B14F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{103B94E3-BEE5-4330-AC26-60FA7A15B14F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{103B94E3-BEE5-4330-AC26-60FA7A15B14F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{103B94E3-BEE5-4330-AC26-60FA7A15B14F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D8A82CD-3B1D-4E52-8C8B-083D9AE936EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D8A82CD-3B1D-4E52-8C8B-083D9AE936EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D8A82CD-3B1D-4E52-8C8B-083D9AE936EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D8A82CD-3B1D-4E52-8C8B-083D9AE936EF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72CF9242-C3E1-413A-9BFC-3B274F4B8055}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72CF9242-C3E1-413A-9BFC-3B274F4B8055}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72CF9242-C3E1-413A-9BFC-3B274F4B8055}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72CF9242-C3E1-413A-9BFC-3B274F4B8055}.Release|Any CPU.Build.0 = Release|Any CPU
+		{818DB99B-28DD-4C25-88EA-5655B79A43B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{818DB99B-28DD-4C25-88EA-5655B79A43B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{818DB99B-28DD-4C25-88EA-5655B79A43B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{818DB99B-28DD-4C25-88EA-5655B79A43B2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{BFA9AC0E-58F9-4714-9851-F96C0E51D7F0} = {AC3D162E-53FF-4A94-BC69-1E64C6AAD954}
+		{41B67F08-01F9-4688-A12C-7C66A51D1D06} = {BFA9AC0E-58F9-4714-9851-F96C0E51D7F0}
+		{1D2E38A8-FA89-4F48-B2A7-F171719AC2CC} = {41B67F08-01F9-4688-A12C-7C66A51D1D06}
+		{E3F79BEB-22B7-4A8A-8CE2-13AB7D8A4940} = {41B67F08-01F9-4688-A12C-7C66A51D1D06}
+		{103B94E3-BEE5-4330-AC26-60FA7A15B14F} = {41B67F08-01F9-4688-A12C-7C66A51D1D06}
+		{6BD440AB-1A70-4428-B0A7-F639CB2EE0B6} = {AC3D162E-53FF-4A94-BC69-1E64C6AAD954}
+		{B6A05611-A904-4E3D-9DF7-D1934723297F} = {6BD440AB-1A70-4428-B0A7-F639CB2EE0B6}
+		{2D8A82CD-3B1D-4E52-8C8B-083D9AE936EF} = {B6A05611-A904-4E3D-9DF7-D1934723297F}
+		{72CF9242-C3E1-413A-9BFC-3B274F4B8055} = {B6A05611-A904-4E3D-9DF7-D1934723297F}
+		{7AA121C9-B2F2-4C20-B29E-538D76648E0F} = {6BD440AB-1A70-4428-B0A7-F639CB2EE0B6}
+		{818DB99B-28DD-4C25-88EA-5655B79A43B2} = {7AA121C9-B2F2-4C20-B29E-538D76648E0F}
+	EndGlobalSection
+EndGlobal

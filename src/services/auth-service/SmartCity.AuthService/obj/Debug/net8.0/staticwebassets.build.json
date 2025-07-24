@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "wg8gNeRCFd+GCS5fD3+yCKPQyPVWtxZ8hAXto2NhfOI=",
+  "Source": "SmartCity.AuthService",
+  "BasePath": "_content/SmartCity.AuthService",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: smart-city-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/alessandrorsseixas/smart-city-org
+    targetRevision: HEAD
+    path: k8s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: smart-city
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: smart-city-project
+  namespace: argocd
+spec:
+  description: Smart City Automation Project
+  sourceRepos:
+  - 'https://github.com/alessandrorsseixas/smart-city-org'
+  destinations:
+  - namespace: smart-city
+    server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+  - group: ''
+    kind: Namespace
+  - group: ''
+    kind: PersistentVolume
+  namespaceResourceWhitelist:
+  - group: ''
+    kind: ConfigMap
+  - group: ''
+    kind: Secret
+  - group: ''
+    kind: Service
+  - group: ''
+    kind: PersistentVolumeClaim
+  - group: apps
+    kind: Deployment
+  - group: networking.k8s.io
+    kind: Ingress

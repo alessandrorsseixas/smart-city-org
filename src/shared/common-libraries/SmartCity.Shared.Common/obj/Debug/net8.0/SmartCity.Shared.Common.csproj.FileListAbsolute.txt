@@ -1,0 +1,12 @@
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.Common/bin/Debug/net8.0/SmartCity.Shared.Common.deps.json
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.Common/bin/Debug/net8.0/SmartCity.Shared.Common.dll
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.Common/bin/Debug/net8.0/SmartCity.Shared.Common.pdb
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.Common/obj/Debug/net8.0/SmartCity.Shared.Common.GeneratedMSBuildEditorConfig.editorconfig
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.Common/obj/Debug/net8.0/SmartCity.Shared.Common.AssemblyInfoInputs.cache
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.Common/obj/Debug/net8.0/SmartCity.Shared.Common.AssemblyInfo.cs
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.Common/obj/Debug/net8.0/SmartCity.Shared.Common.csproj.CoreCompileInputs.cache
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.Common/obj/Debug/net8.0/SmartCity.Shared.Common.sourcelink.json
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.Common/obj/Debug/net8.0/SmartCity.Shared.Common.dll
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.Common/obj/Debug/net8.0/refint/SmartCity.Shared.Common.dll
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.Common/obj/Debug/net8.0/SmartCity.Shared.Common.pdb
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.Common/obj/Debug/net8.0/ref/SmartCity.Shared.Common.dll

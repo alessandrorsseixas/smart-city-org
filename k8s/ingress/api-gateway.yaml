@@ -1,0 +1,64 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: smart-city-ingress
+  namespace: smart-city
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "Authorization, Content-Type"
+spec:
+  rules:
+  - host: smart-city.local
+    http:
+      paths:
+      - path: /api/auth
+        pathType: Prefix
+        backend:
+          service:
+            name: auth-service
+            port:
+              number: 80
+      - path: /api/house
+        pathType: Prefix
+        backend:
+          service:
+            name: house-control-service
+            port:
+              number: 80
+      - path: /api/energy
+        pathType: Prefix
+        backend:
+          service:
+            name: energy-control-service
+            port:
+              number: 80
+      - path: /api/car
+        pathType: Prefix
+        backend:
+          service:
+            name: car-control-service
+            port:
+              number: 80
+      - path: /api/notifications
+        pathType: Prefix
+        backend:
+          service:
+            name: notification-service
+            port:
+              number: 80
+      - path: /api/alexa
+        pathType: Prefix
+        backend:
+          service:
+            name: alexa-service
+            port:
+              number: 80
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-service
+            port:
+              number: 80
