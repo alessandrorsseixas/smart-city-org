@@ -1,0 +1,6 @@
+@SmartCity.HouseControlService_HostAddress = http://localhost:5050
+
+GET {{SmartCity.HouseControlService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

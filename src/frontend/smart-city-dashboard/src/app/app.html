@@ -1,0 +1,137 @@
+<div class="dashboard-container">
+  <mat-toolbar color="primary">
+    <mat-icon>home</mat-icon>
+    <span>Smart City Dashboard</span>
+    <span class="spacer"></span>
+    <button mat-icon-button>
+      <mat-icon>notifications</mat-icon>
+    </button>
+    <button mat-icon-button>
+      <mat-icon>person</mat-icon>
+    </button>
+  </mat-toolbar>
+
+  <div class="dashboard-content">
+    <div class="dashboard-grid">
+      <!-- House Control Panel -->
+      <mat-card class="dashboard-card">
+        <mat-card-header>
+          <mat-card-title>House Control</mat-card-title>
+          <mat-card-subtitle>Monitor and control smart home devices</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="device-controls">
+            <div class="device-item">
+              <span>Living Room Lights</span>
+              <mat-slide-toggle color="primary" [checked]="houseLights.livingRoom" 
+                (change)="toggleDevice('lights', 'livingRoom', $event.checked)">
+              </mat-slide-toggle>
+            </div>
+            <div class="device-item">
+              <span>Air Conditioning</span>
+              <mat-slide-toggle color="primary" [checked]="houseDevices.ac" 
+                (change)="toggleDevice('ac', 'main', $event.checked)">
+              </mat-slide-toggle>
+            </div>
+            <div class="device-item">
+              <span>Security System</span>
+              <mat-slide-toggle color="primary" [checked]="houseDevices.security" 
+                (change)="toggleDevice('security', 'main', $event.checked)">
+              </mat-slide-toggle>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Energy Management -->
+      <mat-card class="dashboard-card">
+        <mat-card-header>
+          <mat-card-title>Energy Management</mat-card-title>
+          <mat-card-subtitle>Solar & Wind Energy Status</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="energy-stats">
+            <div class="energy-item">
+              <mat-icon>wb_sunny</mat-icon>
+              <div>
+                <span class="energy-value">{{ energyData.solar }}kW</span>
+                <span class="energy-label">Solar Power</span>
+              </div>
+            </div>
+            <div class="energy-item">
+              <mat-icon>toys</mat-icon>
+              <div>
+                <span class="energy-value">{{ energyData.wind }}kW</span>
+                <span class="energy-label">Wind Power</span>
+              </div>
+            </div>
+            <div class="energy-item">
+              <mat-icon>battery_charging_full</mat-icon>
+              <div>
+                <span class="energy-value">{{ energyData.battery }}%</span>
+                <span class="energy-label">Battery Level</span>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Car Status -->
+      <mat-card class="dashboard-card">
+        <mat-card-header>
+          <mat-card-title>Autonomous Car</mat-card-title>
+          <mat-card-subtitle>Vehicle location and status</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="car-status">
+            <div class="status-item">
+              <span>Location:</span>
+              <span>{{ carStatus.location }}</span>
+            </div>
+            <div class="status-item">
+              <span>Battery:</span>
+              <span>{{ carStatus.battery }}%</span>
+            </div>
+            <div class="status-item">
+              <span>Status:</span>
+              <span class="status-active">{{ carStatus.status }}</span>
+            </div>
+            <button mat-raised-button color="primary" (click)="controlCar()">
+              Send to Charging Station
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- System Status -->
+      <mat-card class="dashboard-card">
+        <mat-card-header>
+          <mat-card-title>System Status</mat-card-title>
+          <mat-card-subtitle>Overall smart city health</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="system-status">
+            <div class="status-indicator" [class.online]="systemStatus.auth">
+              <mat-icon>security</mat-icon>
+              <span>Auth Service</span>
+            </div>
+            <div class="status-indicator" [class.online]="systemStatus.house">
+              <mat-icon>home</mat-icon>
+              <span>House Control</span>
+            </div>
+            <div class="status-indicator" [class.online]="systemStatus.energy">
+              <mat-icon>flash_on</mat-icon>
+              <span>Energy Service</span>
+            </div>
+            <div class="status-indicator" [class.online]="systemStatus.car">
+              <mat-icon>directions_car</mat-icon>
+              <span>Car Service</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>
+
+<router-outlet></router-outlet>

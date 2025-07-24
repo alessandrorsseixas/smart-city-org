@@ -1,0 +1,113 @@
+pipeline {
+    agent any
+    
+    environment {
+        DOCKER_REGISTRY = 'smartcity'
+        KUBECONFIG = credentials('kubeconfig')
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        
+        stage('Build Shared Libraries') {
+            steps {
+                script {
+                    sh 'dotnet restore'
+                    sh 'dotnet build src/shared/common-libraries/SmartCity.Shared.Common/SmartCity.Shared.Common.csproj'
+                    sh 'dotnet build src/shared/common-libraries/SmartCity.Shared.CQRS/SmartCity.Shared.CQRS.csproj'
+                    sh 'dotnet build src/shared/common-libraries/SmartCity.Shared.Infrastructure/SmartCity.Shared.Infrastructure.csproj'
+                }
+            }
+        }
+        
+        stage('Test') {
+            parallel {
+                stage('Test Auth Service') {
+                    steps {
+                        sh 'dotnet test src/services/auth-service/SmartCity.AuthService.Tests/SmartCity.AuthService.Tests.csproj --logger trx --results-directory TestResults'
+                    }
+                }
+                stage('Test House Control Service') {
+                    steps {
+                        sh 'echo "House Control Service tests would run here"'
+                    }
+                }
+            }
+        }
+        
+        stage('Build Services') {
+            parallel {
+                stage('Build Auth Service') {
+                    steps {
+                        script {
+                            sh 'dotnet publish src/services/auth-service/SmartCity.AuthService/SmartCity.AuthService.csproj -c Release -o ./publish/auth-service'
+                            sh 'docker build -t ${DOCKER_REGISTRY}/auth-service:${BUILD_NUMBER} -f src/services/auth-service/SmartCity.AuthService/Dockerfile .'
+                            sh 'docker tag ${DOCKER_REGISTRY}/auth-service:${BUILD_NUMBER} ${DOCKER_REGISTRY}/auth-service:latest'
+                        }
+                    }
+                }
+                stage('Build House Control Service') {
+                    steps {
+                        script {
+                            sh 'dotnet publish src/services/house-control-service/SmartCity.HouseControlService/SmartCity.HouseControlService.csproj -c Release -o ./publish/house-control-service'
+                            sh 'docker build -t ${DOCKER_REGISTRY}/house-control-service:${BUILD_NUMBER} -t ${DOCKER_REGISTRY}/house-control-service:latest .'
+                        }
+                    }
+                }
+                stage('Build Frontend') {
+                    steps {
+                        script {
+                            dir('src/frontend/smart-city-dashboard') {
+                                sh 'npm ci'
+                                sh 'npm run build'
+                                sh 'docker build -t ${DOCKER_REGISTRY}/frontend:${BUILD_NUMBER} -t ${DOCKER_REGISTRY}/frontend:latest .'
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Push Images') {
+            steps {
+                script {
+                    sh 'docker push ${DOCKER_REGISTRY}/auth-service:${BUILD_NUMBER}'
+                    sh 'docker push ${DOCKER_REGISTRY}/auth-service:latest'
+                    sh 'docker push ${DOCKER_REGISTRY}/house-control-service:${BUILD_NUMBER}'
+                    sh 'docker push ${DOCKER_REGISTRY}/house-control-service:latest'
+                    sh 'docker push ${DOCKER_REGISTRY}/frontend:${BUILD_NUMBER}'
+                    sh 'docker push ${DOCKER_REGISTRY}/frontend:latest'
+                }
+            }
+        }
+        
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    sh 'kubectl apply -f k8s/infrastructure/'
+                    sh 'kubectl apply -f k8s/services/'
+                    sh 'kubectl apply -f k8s/ingress/'
+                    sh 'kubectl rollout restart deployment/auth-service -n smart-city'
+                    sh 'kubectl rollout restart deployment/house-control-service -n smart-city'
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            publishTestResults testResultsPattern: 'TestResults/*.trx'
+            archiveArtifacts artifacts: 'publish/**/*', allowEmptyArchive: true
+        }
+        success {
+            echo 'Smart City deployment successful!'
+        }
+        failure {
+            echo 'Smart City deployment failed!'
+        }
+    }
+}
