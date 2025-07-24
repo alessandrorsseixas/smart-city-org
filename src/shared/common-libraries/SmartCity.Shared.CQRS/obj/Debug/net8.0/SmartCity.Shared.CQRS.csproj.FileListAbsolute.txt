@@ -1,0 +1,13 @@
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.CQRS/bin/Debug/net8.0/SmartCity.Shared.CQRS.deps.json
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.CQRS/bin/Debug/net8.0/SmartCity.Shared.CQRS.dll
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.CQRS/bin/Debug/net8.0/SmartCity.Shared.CQRS.pdb
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.CQRS/obj/Debug/net8.0/SmartCity.Shared.CQRS.csproj.AssemblyReference.cache
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.CQRS/obj/Debug/net8.0/SmartCity.Shared.CQRS.GeneratedMSBuildEditorConfig.editorconfig
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.CQRS/obj/Debug/net8.0/SmartCity.Shared.CQRS.AssemblyInfoInputs.cache
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.CQRS/obj/Debug/net8.0/SmartCity.Shared.CQRS.AssemblyInfo.cs
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.CQRS/obj/Debug/net8.0/SmartCity.Shared.CQRS.csproj.CoreCompileInputs.cache
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.CQRS/obj/Debug/net8.0/SmartCity.Shared.CQRS.sourcelink.json
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.CQRS/obj/Debug/net8.0/SmartCity.Shared.CQRS.dll
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.CQRS/obj/Debug/net8.0/refint/SmartCity.Shared.CQRS.dll
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.CQRS/obj/Debug/net8.0/SmartCity.Shared.CQRS.pdb
+/home/runner/work/smart-city-org/smart-city-org/src/shared/common-libraries/SmartCity.Shared.CQRS/obj/Debug/net8.0/ref/SmartCity.Shared.CQRS.dll
