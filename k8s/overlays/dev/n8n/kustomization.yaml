@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../../base/n8n
+  - secret.yaml
+patches:
+- target:
+    kind: Deployment
+    name: n8n-deployment
+  path: deployment-patch.yaml
+- target:
+    kind: PersistentVolumeClaim  
+    name: n8n-pvc
+  path: pvc-patch.yaml

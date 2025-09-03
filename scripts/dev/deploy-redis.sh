@@ -4,12 +4,10 @@
 # Author: Smart City Automation Project
 # Date: $(date)
 
-# Este script aplica os manifests do Redis na ordem correta:
-# 1. Namespace
-# 2. ConfigMap (redis.conf)
-# 3. PVC
-# 4. Deployment
-# 5. Service
+# Este script aplica os overlays de desenvolvimento do Redis:
+# - Utiliza kustomize para aplicar as configurações base com patches de dev
+# - Configurações otimizadas para ambiente de desenvolvimento
+# - Recursos reduzidos e configurações específicas de dev
 
 set -e
 
@@ -40,21 +38,22 @@ main() {
   check_kubectl
 
   apply() {
-    if [ ! -f "$1" ]; then
-      log_error "Arquivo não encontrado: $1"
+    if [ ! -d "$1" ]; then
+      log_error "Diretório não encontrado: $1"
       exit 1
     fi
-    kubectl apply -f "$1"
+    log_info "Aplicando overlay: $1"
+    kubectl apply -k "$1"
   }
 
-  # Aplica os manifests do Redis
-  apply "k8s/base/namespace-smartcity.yaml"
-  apply "k8s/base/redis/configmap.yaml"
-  apply "k8s/base/redis/pvc.yaml"
-  apply "k8s/base/redis/deployment.yaml"
-  apply "k8s/base/redis/service.yaml"
+  # Aplica namespace primeiro
+  log_info "Aplicando namespace smartcity..."
+  kubectl apply -f "../../k8s/base/namespace-smartcity.yaml"
 
-  log_success "Deploy Redis aplicado"
+  # Aplica os overlays de desenvolvimento do Redis
+  apply "../../k8s/overlays/dev/redis"
+
+  log_success "Deploy Redis com overlays de desenvolvimento aplicado"
   echo "Verificar pods: kubectl get pods -n smartcity"
 }
 

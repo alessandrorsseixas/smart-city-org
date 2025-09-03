@@ -1,9 +1,17 @@
-apiVersion: kustomize.config.k8s.io/v1
+apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - ../../../base/redis
-namespace: smartcity
-patchesStrategicMerge:
-  - deployment-patch.yaml
-  - pvc-patch.yaml
-  - configmap-patch.yaml
+patches:
+- target:
+    kind: Deployment
+    name: redis
+  path: deployment-patch.yaml
+- target:
+    kind: PersistentVolumeClaim  
+    name: redis-pvc
+  path: pvc-patch.yaml
+- target:
+    kind: ConfigMap
+    name: redis-config
+  path: configmap-patch.yaml

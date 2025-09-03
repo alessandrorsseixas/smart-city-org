@@ -26,8 +26,8 @@ spec:
   resources:
     # Quantidade de armazenamento requisitada
     requests:
-      # Tamanho do volume (2GB para cache)
-      storage: 2Gi
+      # Tamanho do volume (1Gi alterado para atender a mudança solicitada)
+      storage: 1Gi
   # Classe de armazenamento (opcional - usa a padrão do cluster)
   # storageClassName: standard
   # Seletor para vincular a um PV específico (opcional)

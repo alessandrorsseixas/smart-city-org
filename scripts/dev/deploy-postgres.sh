@@ -1,8 +1,13 @@
 #!/bin/bash
 
-# Script para deploy do PostgreSQL no cluster Kubernetes
+# Script para deploy do PostgreSQL no cluster Kubernetes usando overlays de desenvolvimento
 # Author: Smart City Automation Project
 # Date: $(date)
+
+# Este script aplica os overlays de desenvolvimento do PostgreSQL:
+# - Utiliza kustomize para aplicar as configurações base com patches de dev
+# - Configurações otimizadas para ambiente de desenvolvimento
+# - Recursos reduzidos e configurações específicas de dev
 
 set -e  # Para o script em caso de erro
 
@@ -50,19 +55,19 @@ check_cluster_connection() {
     log_success "Conexão com o cluster Kubernetes estabelecida"
 }
 
-# Função para aplicar um recurso Kubernetes
-apply_resource() {
-    local file_path=$1
+# Função para aplicar overlay Kubernetes
+apply_overlay() {
+    local overlay_path=$1
     local resource_name=$2
     
-    log_info "Aplicando $resource_name..."
+    log_info "Aplicando overlay $resource_name..."
     
-    if [ ! -f "$file_path" ]; then
-        log_error "Arquivo não encontrado: $file_path"
+    if [ ! -d "$overlay_path" ]; then
+        log_error "Diretório overlay não encontrado: $overlay_path"
         return 1
     fi
     
-    if kubectl apply -f "$file_path"; then
+    if kubectl apply -k "$overlay_path"; then
         log_success "$resource_name aplicado com sucesso"
     else
         log_error "Falha ao aplicar $resource_name"
@@ -139,23 +144,16 @@ main() {
     check_cluster_connection
     
     echo
-    log_info "Iniciando deploy do PostgreSQL..."
+    log_info "Iniciando deploy do PostgreSQL com overlays de desenvolvimento..."
     echo
     
-    # Aplicar recursos na ordem correta
-    apply_resource "k8s/base/namespace-smartcity.yaml" "Namespace SmartCity" || exit 1
+    # Aplicar namespace primeiro
+    log_info "Aplicando namespace smartcity..."
+    kubectl apply -f "../../k8s/base/namespace-smartcity.yaml" || exit 1
     echo
     
-    apply_resource "k8s/base/postgres/configmap.yaml" "PostgreSQL ConfigMap" || exit 1
-    echo
-    
-    apply_resource "k8s/base/postgres/pvc.yaml" "PostgreSQL PVC" || exit 1
-    echo
-    
-    apply_resource "k8s/base/postgres/deployment.yaml" "PostgreSQL Deployment" || exit 1
-    echo
-    
-    apply_resource "k8s/base/postgres/service.yaml" "PostgreSQL Service" || exit 1
+    # Aplicar overlay de desenvolvimento
+    apply_overlay "../../k8s/overlays/dev/postgres" "PostgreSQL Development Overlay" || exit 1
     echo
     
     # Verificações pós-deploy
@@ -168,7 +166,7 @@ main() {
     test_postgres_connection
     echo
     
-    log_success "Deploy do PostgreSQL concluído!"
+    log_success "Deploy do PostgreSQL com overlays de desenvolvimento concluído!"
     echo
     log_info "Informações de conexão:"
     echo "  - Host: postgres-service.smartcity.svc.cluster.local"

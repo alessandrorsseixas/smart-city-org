@@ -37,6 +37,10 @@ spec:
         environment: development
     # Especificações dos pods
     spec:
+      # Garantir que o volume montado tenha a propriedade correta para o MongoDB
+      securityContext:
+        runAsUser: 999
+        fsGroup: 999
       # Containers que compõem o pod
       containers:
         # Container principal do MongoDB
@@ -78,13 +82,18 @@ spec:
               memory: "512Mi"
               cpu: "500m"
           # Verificações de saúde do container
+          startupProbe:
+            tcpSocket:
+              port: 27017
+            # Tempo inicial antes da primeira verificação
+            initialDelaySeconds: 10
+            # Intervalo entre verificações
+            periodSeconds: 10
+            # Número de falhas consecutivas antes de reiniciar
+            failureThreshold: 30
           livenessProbe:
-            # Comando para verificar se o MongoDB está respondendo
-            exec:
-              command:
-                - mongosh
-                - --eval
-                - "db.adminCommand('ping')"
+            tcpSocket:
+              port: 27017
             # Tempo inicial antes da primeira verificação
             initialDelaySeconds: 30
             # Intervalo entre verificações
@@ -95,14 +104,10 @@ spec:
             failureThreshold: 3
           # Verificação se o container está pronto para receber tráfego
           readinessProbe:
-            # Comando para verificar se o MongoDB está pronto
-            exec:
-              command:
-                - mongosh
-                - --eval
-                - "db.adminCommand('ping')"
+            tcpSocket:
+              port: 27017
             # Tempo inicial antes da primeira verificação
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             # Intervalo entre verificações
             periodSeconds: 5
             # Timeout para cada verificação
@@ -118,11 +123,11 @@ spec:
             - name: mongodb-config
               mountPath: /etc/mongod.conf
               subPath: mongod.conf
-    # Mantém volumes não persistentes (ConfigMap) no template
-    volumes:
-      - name: mongodb-config
-        configMap:
-          name: mongodb-config
+      # Mantém volumes não persistentes (ConfigMap) no template
+      volumes:
+        - name: mongodb-config
+          configMap:
+            name: mongodb-config
   # VolumeClaimTemplates para criar PVCs estáveis por pod (StatefulSet)
   volumeClaimTemplates:
     - metadata:

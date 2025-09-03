@@ -1,25 +1,60 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/bash
 
-# Script para aplicar os manifestos do n8n no cluster (namespace deve existir)
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-MANIFEST_DIR="$ROOT_DIR/k8s/base/n8n"
+# Script para deploy do n8n no cluster Kubernetes usando overlays de desenvolvimento
+# Author: Smart City Automation Project
+# Date: $(date)
 
-command -v kubectl >/dev/null 2>&1 || { echo "kubectl não encontrado"; exit 1; }
+# Este script aplica os overlays de desenvolvimento do n8n:
+# - Utiliza kustomize para aplicar as configurações base com patches de dev
+# - Configurações otimizadas para ambiente de desenvolvimento
+# - Recursos reduzidos e configurações específicas de dev
 
-echo "Aplicando ConfigMap..."
-kubectl apply -f "$MANIFEST_DIR/configmap.yaml"
+set -e
 
-echo "Aplicando Secret..."
-kubectl apply -f "$MANIFEST_DIR/secret.yaml"
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
 
-echo "Aplicando PVC..."
-kubectl apply -f "$MANIFEST_DIR/pvc.yaml"
+log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
+log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
+log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
-echo "Aplicando Service..."
-kubectl apply -f "$MANIFEST_DIR/service.yaml"
+# Verifica se kubectl está disponível no PATH
+check_kubectl() {
+  if ! command -v kubectl &> /dev/null; then
+    log_error "kubectl não encontrado"
+    exit 1
+  fi
+}
 
-echo "Aplicando Deployment..."
-kubectl apply -f "$MANIFEST_DIR/deployment.yaml"
+main() {
+  echo "=================================="
+  echo "  n8n Deployment Script"
+  echo "=================================="
 
-echo "n8n aplicado com sucesso. Verifique os pods com: kubectl -n smartcity get pods -l app=n8n"
+  check_kubectl
+
+  apply() {
+    if [ ! -d "$1" ]; then
+      log_error "Diretório não encontrado: $1"
+      exit 1
+    fi
+    log_info "Aplicando overlay: $1"
+    kubectl apply -k "$1"
+  }
+
+  # Aplica namespace primeiro
+  log_info "Aplicando namespace smartcity..."
+  kubectl apply -f "../../k8s/base/namespace-smartcity.yaml"
+
+  # Aplica os overlays de desenvolvimento do n8n
+  apply "../../k8s/overlays/dev/n8n"
+
+  log_success "Deploy n8n com overlays de desenvolvimento aplicado"
+  echo "Verificar pods: kubectl get pods -n smartcity"
+}
+
+main "$@"
