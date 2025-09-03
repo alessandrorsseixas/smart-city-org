@@ -1,0 +1,116 @@
+# Versão da API do Kubernetes utilizada para este recurso
+apiVersion: apps/v1
+# Tipo de recurso Kubernetes - Deployment para n8n (aplicação estateless que pode usar Postgres)
+kind: Deployment
+metadata:
+  name: n8n-deployment
+  namespace: smartcity
+  labels:
+    app: n8n
+    component: workflow
+    environment: development
+  annotations:
+    description: "n8n - workflow automation service for Smart City"
+spec:
+  # Em ambientes de produção você pode aumentar réplicas e usar estratégia de rollout adequada
+  replicas: 1
+  selector:
+    matchLabels:
+      app: n8n
+      component: workflow
+  template:
+    metadata:
+      labels:
+        app: n8n
+        component: workflow
+        environment: development
+    spec:
+      containers:
+        - name: n8n
+          # Imagem oficial do n8n
+          image: n8nio/n8n:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 5678
+              protocol: TCP
+          # Variáveis de ambiente críticas lidas a partir do Secret 'n8n-secrets'
+          env:
+            - name: N8N_BASIC_AUTH_ACTIVE
+              valueFrom:
+                secretKeyRef:
+                  name: n8n-secrets
+                  key: N8N_BASIC_AUTH_ACTIVE
+            - name: N8N_BASIC_AUTH_USER
+              valueFrom:
+                secretKeyRef:
+                  name: n8n-secrets
+                  key: N8N_BASIC_AUTH_USER
+            - name: N8N_BASIC_AUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: n8n-secrets
+                  key: N8N_BASIC_AUTH_PASSWORD
+            - name: DB_TYPE
+              valueFrom:
+                secretKeyRef:
+                  name: n8n-secrets
+                  key: DB_TYPE
+            - name: DB_POSTGRESDB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: n8n-secrets
+                  key: DB_POSTGRESDB_HOST
+            - name: DB_POSTGRESDB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: n8n-secrets
+                  key: DB_POSTGRESDB_PORT
+            - name: DB_POSTGRESDB_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: n8n-secrets
+                  key: DB_POSTGRESDB_DATABASE
+            - name: DB_POSTGRESDB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: n8n-secrets
+                  key: DB_POSTGRESDB_USER
+            - name: DB_POSTGRESDB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: n8n-secrets
+                  key: DB_POSTGRESDB_PASSWORD
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          # Liveness/Readiness para garantir tráfego apenas para pods saudáveis
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          # Monta storage local para casos onde o n8n usa armazenamento local (ex: SQLite) ou para persistir dados temporários
+          volumeMounts:
+            - name: n8n-data
+              mountPath: /home/node/.n8n
+      # Volumes do pod (o PVC é aplicado separadamente como k8s/base/n8n/pvc.yaml)
+      volumes:
+        - name: n8n-data
+          persistentVolumeClaim:
+            claimName: n8n-pvc

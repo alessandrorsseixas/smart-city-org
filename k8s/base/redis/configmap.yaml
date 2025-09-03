@@ -1,0 +1,64 @@
+# Versão da API do Kubernetes utilizada para este recurso
+apiVersion: v1
+# Tipo de recurso Kubernetes - ConfigMap para armazenar configuração do Redis
+kind: ConfigMap
+# Metadados que definem as características do ConfigMap
+metadata:
+  # Nome único do ConfigMap no namespace
+  name: redis-config
+  # Namespace onde o ConfigMap será criado
+  namespace: smartcity
+  # Labels para identificação e seleção do ConfigMap
+  labels:
+    app: redis
+    component: cache
+    environment: development
+  # Annotations para informações adicionais
+  annotations:
+    description: "Configuration for Redis in Smart City application"
+# Dados armazenados no ConfigMap
+data:
+  # Arquivo de configuração do Redis usado pelo container
+  redis.conf: |
+    # Redis configuration for development
+    # Bind a todas as interfaces para permitir acesso dentro do cluster
+    bind 0.0.0.0
+    # Em ambiente interno de desenvolvimento, protegido desabilitado
+    protected-mode no
+    # Porta padrão do Redis
+    port 6379
+    tcp-backlog 511
+    timeout 0
+    tcp-keepalive 300
+    daemonize no
+    supervised no
+    pidfile /var/run/redis_6379.pid
+    loglevel notice
+    logfile ""
+    databases 16
+
+    # Snapshotting
+    save 900 1
+    save 300 10
+    save 60 10000
+
+    # RDB and AOF
+    rdbcompression yes
+    rdbchecksum yes
+    aof-enabled yes
+    aof-use-rdb-preamble yes
+
+    # Memory
+    # Define limite de memória para o container (valores de desenvolvimento)
+    maxmemory 128mb
+    maxmemory-policy allkeys-lru
+
+    # Segurança e performance
+    appendonly yes
+    appendfsync everysec
+    no-appendfsync-on-rewrite no
+    auto-aof-rewrite-percentage 100
+    auto-aof-rewrite-min-size 64mb
+
+    # Diretório para persistência
+    dir /data

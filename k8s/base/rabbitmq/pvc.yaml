@@ -1,0 +1,25 @@
+# Versão da API do Kubernetes utilizada para este recurso
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  # Nome único do PVC no namespace
+  name: rabbitmq-pvc
+  # Namespace onde o PVC será criado
+  namespace: smartcity
+  # Labels para identificação e seleção do PVC
+  labels:
+    app: rabbitmq
+    component: messaging
+    environment: development
+  # Annotations para informações adicionais
+  annotations:
+    description: "Persistent storage for RabbitMQ data"
+spec:
+  # Modo de acesso
+  accessModes:
+    - ReadWriteOnce
+  # Requisição de armazenamento
+  resources:
+    requests:
+      storage: 5Gi
+  # storageClassName: standard (opcional)

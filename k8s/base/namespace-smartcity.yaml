@@ -1,0 +1,18 @@
+# Versão da API do Kubernetes utilizada para este recurso
+apiVersion: v1
+# Tipo de recurso Kubernetes - Namespace para isolamento lógico
+kind: Namespace
+# Metadados que definem as características do namespace
+metadata:
+  # Nome único do namespace no cluster
+  name: smartcity
+  # Labels para identificação e seleção do namespace
+  labels:
+    # Label com o nome do namespace para facilitar queries
+    name: smartcity
+    # Label indicando o ambiente (development, staging, production)
+    environment: development
+  # Annotations para informações adicionais não usadas para seleção
+  annotations:
+    # Descrição do propósito e uso do namespace
+    description: "Namespace for Smart City application components"

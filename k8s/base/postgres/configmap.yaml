@@ -1,0 +1,108 @@
+# Versão da API do Kubernetes utilizada para este recurso
+apiVersion: v1
+# Tipo de recurso Kubernetes - ConfigMap para armazenar configurações
+kind: ConfigMap
+# Metadados que definem as características do ConfigMap
+metadata:
+  # Nome único do ConfigMap no namespace
+  name: postgres-init-config
+  # Namespace onde o ConfigMap será criado
+  namespace: smartcity
+  # Labels para identificação e seleção do ConfigMap
+  labels:
+    app: postgres
+    component: database
+    environment: development
+  # Annotations para informações adicionais
+  annotations:
+    description: "Initialization scripts for PostgreSQL database in Smart City application"
+# Dados armazenados no ConfigMap
+data:
+  # Script de inicialização principal
+  01-init-database.sql: |
+    -- Script de inicialização do banco PostgreSQL para Smart City
+    -- Criação de schemas e configurações básicas
+    
+    -- Criar extensões necessárias
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+    CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+    CREATE EXTENSION IF NOT EXISTS "hstore";
+    
+    -- Criar schemas para organização dos dados
+    CREATE SCHEMA IF NOT EXISTS smartcity;
+    CREATE SCHEMA IF NOT EXISTS iot;
+    CREATE SCHEMA IF NOT EXISTS audit;
+    CREATE SCHEMA IF NOT EXISTS auth;
+    
+    -- Comentários nos schemas
+    COMMENT ON SCHEMA smartcity IS 'Schema principal para dados da cidade inteligente';
+    COMMENT ON SCHEMA iot IS 'Schema para dados de dispositivos IoT';
+    COMMENT ON SCHEMA audit IS 'Schema para auditoria e logs';
+    COMMENT ON SCHEMA auth IS 'Schema para autenticação e autorização';
+    
+    -- Configurar search_path padrão
+    ALTER DATABASE smartcity SET search_path TO smartcity, iot, audit, auth, public;
+  
+  # Script para criação de usuários e permissões
+  02-create-users.sql: |
+    -- Criação de usuários específicos para cada microserviço
+    
+    -- Observação: as senhas devem ser geradas e aplicadas via Secrets em ambiente real
+    
+    -- Usuário para o serviço de controle de casas
+    CREATE USER house_service WITH PASSWORD 'house_pass_123';
+    GRANT CONNECT ON DATABASE smartcity TO house_service;
+    GRANT USAGE ON SCHEMA smartcity, iot TO house_service;
+    
+    -- Usuário para o serviço de controle de carros
+    CREATE USER car_service WITH PASSWORD 'car_pass_123';
+    GRANT CONNECT ON DATABASE smartcity TO car_service;
+    GRANT USAGE ON SCHEMA smartcity, iot TO car_service;
+    
+    -- Usuário para o serviço de energia
+    CREATE USER energy_service WITH PASSWORD 'energy_pass_123';
+    GRANT CONNECT ON DATABASE smartcity TO energy_service;
+    GRANT USAGE ON SCHEMA smartcity, iot TO energy_service;
+    
+    -- Usuário para o serviço de auditoria
+    CREATE USER audit_service WITH PASSWORD 'audit_pass_123';
+    GRANT CONNECT ON DATABASE smartcity TO audit_service;
+    GRANT USAGE ON SCHEMA audit TO audit_service;
+    GRANT SELECT ON ALL TABLES IN SCHEMA smartcity, iot TO audit_service;
+    
+    -- Usuário para o serviço de autenticação
+    CREATE USER auth_service WITH PASSWORD 'auth_pass_123';
+    GRANT CONNECT ON DATABASE smartcity TO auth_service;
+    GRANT USAGE ON SCHEMA auth TO auth_service;
+  
+  # Script para configurações de performance
+  03-performance-config.sql: |
+    -- Configurações de performance para PostgreSQL
+    
+    -- Configurar parâmetros para melhor performance em desenvolvimento
+    ALTER SYSTEM SET shared_preload_libraries = 'pg_stat_statements';
+    ALTER SYSTEM SET track_activity_query_size = 2048;
+    ALTER SYSTEM SET pg_stat_statements.track = 'all';
+    
+    -- Configurações de logging
+    ALTER SYSTEM SET log_statement = 'mod';
+    ALTER SYSTEM SET log_min_duration_statement = 1000;
+    ALTER SYSTEM SET log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h ';
+    
+    -- Configurações de conexão
+    ALTER SYSTEM SET max_connections = 100;
+    
+    -- Nota: Em produção, ajustar estes parâmetros conforme necessário
+    -- e considerar usar postgresql.conf personalizado
+  # Comentários explicativos sobre o ConfigMap
+  README.txt: |
+    Este ConfigMap contém scripts de inicialização para o banco de dados PostgreSQL
+    utilizado na aplicação Smart City. Os scripts incluem a criação de schemas,
+    usuários e configurações de performance específicas para o ambiente de desenvolvimento.
+    
+    -- 01-init-database.sql: Script principal para a criação dos schemas e extensões necessárias.
+    -- 02-create-users.sql: Script para a criação de usuários e definição de permissões.
+    -- 03-performance-config.sql: Script para ajuste de configurações de performance do PostgreSQL.
+    
+    Importante: Revisar e ajustar os scripts conforme necessário antes da aplicação em
+    ambientes de produção.

@@ -1,0 +1,36 @@
+# Versão da API do Kubernetes utilizada para este recurso
+apiVersion: v1
+# Tipo de recurso Kubernetes - PersistentVolumeClaim para solicitação de armazenamento
+kind: PersistentVolumeClaim
+# Metadados que definem as características do PVC
+metadata:
+  # Nome único do PVC no namespace
+  name: mongodb-pvc
+  # Namespace onde o PVC será criado
+  namespace: smartcity
+  # Labels para identificação e seleção do PVC
+  labels:
+    app: mongodb
+    component: database
+    environment: development
+  # Annotations para informações adicionais
+  annotations:
+    description: "Persistent storage for MongoDB data in Smart City application"
+# Especificações do PVC
+spec:
+  # Modos de acesso ao volume
+  accessModes:
+    # ReadWriteOnce: pode ser montado como leitura-escrita por um único nó
+    - ReadWriteOnce
+  # Recursos de armazenamento solicitados
+  resources:
+    # Quantidade de armazenamento requisitada
+    requests:
+      # Tamanho do volume (5GB para desenvolvimento)
+      storage: 5Gi
+  # Classe de armazenamento (opcional - usa a padrão do cluster)
+  # storageClassName: standard
+  # Seletor para vincular a um PV específico (opcional)
+  # selector:
+  #   matchLabels:
+  #     app: mongodb

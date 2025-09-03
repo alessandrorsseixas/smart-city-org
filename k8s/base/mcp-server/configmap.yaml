@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mcp-server-config
+  namespace: smartcity
+  labels:
+    app: mcp-server
+    component: mcp
+    environment: development
+data:
+  MCP_LOG_LEVEL: "info"
+  # Prompt template usado para gerar respostas em linguagem natural. Ajuste conforme necessidade.
+  MCP_PROMPT_TEMPLATE: |
+    Você é um assistente que responde perguntas sobre o cluster Kubernetes.
+    Forneça respostas concisas e, quando apropriado, inclua comandos kubectl relevantes.
