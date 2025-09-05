@@ -1,9 +1,0 @@
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-resources:
-  - deployment.yaml
-  - service.yaml
-  - configmap.yaml
-
-# NOTE: Secrets are intentionally not created in the base. Overlays (dev/prod)
-# should generate or reference secrets appropriate for the environment.

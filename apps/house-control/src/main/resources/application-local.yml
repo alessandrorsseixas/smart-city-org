@@ -1,7 +1,0 @@
-# Perfil local com variáveis de override para desenvolvimento
-spring:
-  profiles: local
-
-sdlog:
-  url: ${SDLOG_URL:http://localhost:9100}
-  token: ${SDLOG_TOKEN:Bearer local-dev-token}

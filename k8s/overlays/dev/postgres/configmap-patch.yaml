@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: postgres-init-config
-data:
-  03-performance-config.sql: |
-    -- Ajustes leves para dev
-    ALTER SYSTEM SET max_connections = 50;

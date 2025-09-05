@@ -109,16 +109,22 @@ kubectl -n $NAMESPACE create secret tls $TLS_SECRET_NAME \
 
 # --- Passo 7: Instalação do Rancher via Helm ---
 echo -e "\n### [FASE 7] Realizando o deploy do Rancher (versão $RANCHER_VERSION) para o host '$INGRESS_HOST'..."
-helm install $RANCHER_HELM_RELEASE $RANCHER_HELM_CHART \
+helm upgrade --install $RANCHER_HELM_RELEASE $RANCHER_HELM_CHART \
   --namespace $NAMESPACE \
   --set hostname=$INGRESS_HOST \
   --set rancherImageTag=$RANCHER_VERSION \
   --set ingress.tls.source=secret \
   --set ingress.ingressClassName=$INGRESS_CLASS_NAME
+  
 
 # --- Passo 8: Aguardar o Rollout do Rancher ---
 echo -e "\n### [FASE 8] Aguardando o deployment do Rancher ser concluído..."
 kubectl -n $NAMESPACE rollout status deployment/rancher --timeout=10m
+
+# --- Passo 9: Extração de Credenciais e Instruções de Acesso ---
+echo -e "\n### [FASE 9] Instalação concluída. Preparando instruções de acesso..."
+
+MINIKUBE_IP=$(minikube ip)
 
 # --- Passo 9: Extração de Credenciais e Instruções de Acesso ---
 echo -e "\n### [FASE 9] Instalação concluída. Preparando instruções de acesso..."
@@ -153,3 +159,4 @@ else
   echo -e "\n      kubectl exec -n $NAMESPACE $POD_NAME -- reset-password\n"
 fi
 echo "======================================================================="
+sleep 40

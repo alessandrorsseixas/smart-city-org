@@ -2,12 +2,15 @@
 
 # Script para deploy do PostgreSQL no cluster Kubernetes usando overlays de desenvolvimento
 # Author: Smart City Automation Project
-# Date: $(date)
+# Objetivo: Deploy do PostgreSQL usando StatefulSet com configurações base + overlays dev
 
 # Este script aplica os overlays de desenvolvimento do PostgreSQL:
-# - Utiliza kustomize para aplicar as configurações base com patches de dev
-# - Configurações otimizadas para ambiente de desenvolvimento
-# - Recursos reduzidos e configurações específicas de dev
+# - Base: k8s/base/postgres (StatefulSet, Service, ConfigMap)
+# - Overlay dev: k8s/overlays/dev/postgres (Secret, patches de recursos e config)
+# - Utiliza kustomize para aplicar configurações base com patches de dev
+# - StatefulSet com PVC template para dados persistentes
+# - ConfigMap com scripts de inicialização para schemas e usuários
+# - Secret com credenciais para ambiente de desenvolvimento
 
 set -e  # Para o script em caso de erro
 
@@ -75,37 +78,54 @@ apply_overlay() {
     fi
 }
 
-# Função para verificar status do deployment
-check_deployment_status() {
-    log_info "Verificando status do deployment do PostgreSQL..."
+# Função para verificar status do statefulset
+check_statefulset_status() {
+    log_info "Verificando status do StatefulSet do PostgreSQL..."
     
-    # Aguarda o deployment estar pronto (timeout de 5 minutos)
-    if kubectl wait --for=condition=available --timeout=300s deployment/postgres-deployment -n smartcity; then
-        log_success "PostgreSQL deployment está pronto"
+    # Verifica se o StatefulSet existe
+    if ! kubectl get statefulset postgres -n smartcity &> /dev/null; then
+        log_error "StatefulSet postgres não encontrado no namespace smartcity"
+        return 1
+    fi
+    
+    # Aguarda o StatefulSet estar pronto (timeout de 5 minutos)
+    log_info "Aguardando StatefulSet estar pronto..."
+    if kubectl wait --for=jsonpath='{.status.readyReplicas}'=1 statefulset/postgres -n smartcity --timeout=300s; then
+        log_success "PostgreSQL StatefulSet está pronto"
+        
+        # Verifica o status dos pods
+        local pod_status=$(kubectl get pods -n smartcity -l app=postgres -o jsonpath='{.items[0].status.phase}' 2>/dev/null || echo "NotFound")
+        log_info "Status do pod PostgreSQL: $pod_status"
     else
-        log_warning "PostgreSQL deployment ainda não está completamente pronto"
-        log_info "Verifique o status com: kubectl get pods -n smartcity"
+        log_warning "PostgreSQL StatefulSet ainda não está completamente pronto"
+        log_info "Verifique o status com: kubectl get pods -n smartcity -l app=postgres"
+        log_info "Verifique os eventos com: kubectl describe statefulset postgres -n smartcity"
     fi
 }
 
 # Função para verificar status do PVC
 check_pvc_status() {
-    log_info "Verificando status do PVC..."
+    log_info "Verificando status dos PVCs do PostgreSQL..."
     
-    local pvc_status=$(kubectl get pvc postgres-pvc -n smartcity -o jsonpath='{.status.phase}' 2>/dev/null || echo "NotFound")
+    # StatefulSet usa volumeClaimTemplates, então o PVC será postgres-data-postgres-0
+    local pvc_name="postgres-data-postgres-0"
+    local pvc_status=$(kubectl get pvc "$pvc_name" -n smartcity -o jsonpath='{.status.phase}' 2>/dev/null || echo "NotFound")
     
     case $pvc_status in
         "Bound")
-            log_success "PVC está vinculado com sucesso"
+            log_success "PVC $pvc_name está vinculado com sucesso"
+            local storage=$(kubectl get pvc "$pvc_name" -n smartcity -o jsonpath='{.status.capacity.storage}' 2>/dev/null)
+            log_info "Capacidade do volume: $storage"
             ;;
         "Pending")
-            log_warning "PVC está pendente - aguardando provisão de volume"
+            log_warning "PVC $pvc_name está pendente - aguardando provisão de volume"
+            kubectl describe pvc "$pvc_name" -n smartcity | grep -A 3 "Events:" || true
             ;;
         "NotFound")
-            log_error "PVC não encontrado"
+            log_warning "PVC $pvc_name ainda não foi criado (StatefulSet pode estar iniciando)"
             ;;
         *)
-            log_warning "Status do PVC: $pvc_status"
+            log_warning "Status do PVC $pvc_name: $pvc_status"
             ;;
     esac
 }
@@ -115,26 +135,38 @@ test_postgres_connection() {
     log_info "Testando conectividade do PostgreSQL..."
     
     # Aguarda alguns segundos para o PostgreSQL estar completamente pronto
-    sleep 10
+    sleep 15
     
-    if kubectl exec -n smartcity deployment/postgres-deployment -- pg_isready -U admin -d smartcity &> /dev/null; then
+    # O pod do StatefulSet tem nome postgres-0
+    local pod_name="postgres-0"
+    
+    if kubectl exec -n smartcity "$pod_name" -- pg_isready -U admin -d smartcity &> /dev/null; then
         log_success "PostgreSQL está respondendo às conexões"
         
-        # Testa uma query simples
-        if kubectl exec -n smartcity deployment/postgres-deployment -- psql -U admin -d smartcity -c "SELECT version();" &> /dev/null; then
+        # Testa uma query simples para verificar se o banco está funcionando
+        if kubectl exec -n smartcity "$pod_name" -- psql -U admin -d smartcity -c "SELECT version();" &> /dev/null; then
             log_success "PostgreSQL está funcionando corretamente"
+            
+            # Verifica se os schemas foram criados pelos scripts de inicialização
+            local schemas=$(kubectl exec -n smartcity "$pod_name" -- psql -U admin -d smartcity -t -c "SELECT schema_name FROM information_schema.schemata WHERE schema_name IN ('smartcity', 'iot', 'audit', 'auth');" 2>/dev/null | wc -l)
+            if [ "$schemas" -gt 0 ]; then
+                log_success "Schemas de inicialização foram criados ($schemas encontrados)"
+            else
+                log_warning "Schemas de inicialização não foram encontrados"
+            fi
         else
             log_warning "PostgreSQL está rodando, mas há problemas com queries SQL"
         fi
     else
         log_warning "PostgreSQL ainda não está pronto para conexões"
+        log_info "Verificar logs com: kubectl logs postgres-0 -n smartcity"
     fi
 }
 
 # Função principal
 main() {
     echo "===================================="
-    echo "  PostgreSQL Deployment Script"
+    echo "  PostgreSQL StatefulSet Deployment"
     echo "  Smart City Automation Project"
     echo "===================================="
     echo
@@ -144,12 +176,18 @@ main() {
     check_cluster_connection
     
     echo
-    log_info "Iniciando deploy do PostgreSQL com overlays de desenvolvimento..."
+    log_info "Iniciando deploy do PostgreSQL StatefulSet com overlays de desenvolvimento..."
+    log_info "Base: k8s/base/postgres | Overlay: k8s/overlays/dev/postgres"
     echo
     
-    # Aplicar namespace primeiro
-    log_info "Aplicando namespace smartcity..."
-    kubectl apply -f "../../k8s/base/namespace-smartcity.yaml" || exit 1
+    # Verificar se namespace existe
+    if ! kubectl get namespace smartcity &> /dev/null; then
+        log_info "Criando namespace smartcity..."
+        kubectl create namespace smartcity
+        log_success "Namespace smartcity criado"
+    else
+        log_info "Namespace smartcity já existe"
+    fi
     echo
     
     # Aplicar overlay de desenvolvimento
@@ -160,28 +198,44 @@ main() {
     check_pvc_status
     echo
     
-    check_deployment_status
+    check_statefulset_status
     echo
     
     test_postgres_connection
     echo
     
-    log_success "Deploy do PostgreSQL com overlays de desenvolvimento concluído!"
+    log_success "Deploy do PostgreSQL StatefulSet com overlays de desenvolvimento concluído!"
+    echo
+    log_info "Componentes implantados:"
+    echo "  - StatefulSet: postgres (postgres:15)"
+    echo "  - Service: postgres (Headless ClusterIP)"  
+    echo "  - Secret: postgres-secrets (credenciais)"
+    echo "  - ConfigMap: postgres-init-config (scripts de inicialização)"
+    echo "  - PVC: postgres-data-postgres-0 (dados persistentes)"
     echo
     log_info "Informações de conexão:"
-    echo "  - Host: postgres-service.smartcity.svc.cluster.local"
+    echo "  - Host interno: postgres.smartcity.svc.cluster.local"
+    echo "  - Host de pod direto: postgres-0.postgres.smartcity.svc.cluster.local"
     echo "  - Port: 5432"
     echo "  - Database: smartcity"
     echo "  - User: admin"
     echo "  - Password: smartcity123"
     echo
+    log_info "Schemas criados automaticamente:"
+    echo "  - smartcity (principal)"
+    echo "  - iot (dispositivos IoT)"
+    echo "  - audit (auditoria)"
+    echo "  - auth (autenticação)"
+    echo
     log_info "Comandos úteis:"
-    echo "  - Verificar pods: kubectl get pods -n smartcity"
-    echo "  - Verificar services: kubectl get svc -n smartcity"
+    echo "  - Verificar StatefulSet: kubectl get statefulset postgres -n smartcity"
+    echo "  - Verificar pods: kubectl get pods -n smartcity -l app=postgres"
+    echo "  - Verificar services: kubectl get svc postgres -n smartcity"
     echo "  - Verificar PVC: kubectl get pvc -n smartcity"
-    echo "  - Logs do PostgreSQL: kubectl logs -f deployment/postgres-deployment -n smartcity"
-    echo "  - Conectar ao PostgreSQL: kubectl exec -it deployment/postgres-deployment -n smartcity -- psql -U admin -d smartcity"
-    echo "  - Listar databases: kubectl exec -it deployment/postgres-deployment -n smartcity -- psql -U admin -d smartcity -c '\l'"
+    echo "  - Logs do PostgreSQL: kubectl logs postgres-0 -n smartcity"
+    echo "  - Conectar ao PostgreSQL: kubectl exec -it postgres-0 -n smartcity -- psql -U admin -d smartcity"
+    echo "  - Listar databases: kubectl exec postgres-0 -n smartcity -- psql -U admin -d smartcity -c '\l'"
+    echo "  - Listar schemas: kubectl exec postgres-0 -n smartcity -- psql -U admin -d smartcity -c '\dn'"
 }
 
 # Executar função principal
