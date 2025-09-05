@@ -1,0 +1,23 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/house_control
+    username: postgres
+    password: postgres
+  redis:
+    host: localhost
+    port: 6379
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+keycloak:
+  auth-server-url: http://localhost:8080/auth
+  realm: smartcity
+  resource: house-control
+
+app:
+  messaging:
+    queues:
+      house-commands: house.commands.q

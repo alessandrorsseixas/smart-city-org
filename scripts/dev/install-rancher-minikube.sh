@@ -29,6 +29,13 @@ TLS_SECRET_NAME="tls-rancher-ingress"
 CERT_FILE="./tls.crt"
 KEY_FILE="./tls.key"
 
+# Path to infra dev services (will be applied)
+WORKSPACE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+INFRA_DEV_DIR="$WORKSPACE_ROOT/infra/dev"
+
+# CLI options
+RECREATE_ENV=false
+
 # ====================================================================================
 # Funções de Validação e Pré-requisitos
 # ====================================================================================
@@ -51,8 +58,90 @@ function check_nsswitch() {
   fi
 }
 
+# Check node allocatable resources and optionally suggest increasing minikube
+function check_node_resources_or_prompt() {
+  NODE_NAME=$(kubectl get nodes -o name | head -n1 || true)
+  if [[ -z "$NODE_NAME" ]]; then
+    echo "No nodes found in cluster. Is kubectl configured?"
+    exit 1
+  fi
+  CPU_ALLOC=$(kubectl get "$NODE_NAME" -o jsonpath='{.status.allocatable.cpu}')
+  MEM_ALLOC=$(kubectl get "$NODE_NAME" -o jsonpath='{.status.allocatable.memory}')
+
+  # normalize
+  if [[ "$CPU_ALLOC" == *m ]]; then
+    CPU_M=${CPU_ALLOC%m}
+  else
+    CPU_M=$(( CPU_ALLOC * 1000 ))
+  fi
+
+  if [[ "$MEM_ALLOC" == *Ki ]]; then
+    MEM_MI=$(( ${MEM_ALLOC%Ki} / 1024 ))
+  elif [[ "$MEM_ALLOC" == *Mi ]]; then
+    MEM_MI=${MEM_ALLOC%Mi}
+  elif [[ "$MEM_ALLOC" == *Gi ]]; then
+    MEM_MI=$(( ${MEM_ALLOC%Gi} * 1024 ))
+  else
+    MEM_MI=0
+  fi
+
+  echo "Cluster allocatable: CPU=${CPU_M}m, MEM=${MEM_MI}Mi"
+  if (( CPU_M < 2000 )) || (( MEM_MI < 4096 )); then
+    echo "Recursos do cluster abaixo do recomendado (2 CPU / 4Gi)."
+    read -r -p "Deseja reiniciar o Minikube com 4 CPU e 8Gi de RAM agora? (recomendado para Rancher) (y/N): " resp
+    if [[ "$resp" =~ ^[Yy]$ ]]; then
+      echo "Reiniciando Minikube com recursos aumentados..."
+      minikube stop || true
+      minikube delete --all --purge || true
+      minikube start --driver=docker --cpus=4 --memory=8192
+      echo "Minikube reiniciado. Aguarde alguns segundos para o cluster estabilizar."
+    else
+      echo "Continuando sem alterar recursos (pode falhar se insuficiente)."
+    fi
+  fi
+}
+
+# Apply infra/dev manifests (services/ingress helpers)
+function apply_infra_dev() {
+  if [[ -d "$INFRA_DEV_DIR" ]]; then
+    echo "Aplicando infra dev (infra/dev)..."
+    kubectl apply -k "$INFRA_DEV_DIR"
+  else
+    echo "Pasta infra/dev não encontrada: $INFRA_DEV_DIR"
+  fi
+}
+
+# Ensure /etc/hosts entry for INGRESS_HOST, ask for confirmation and use sudo to append
+function ensure_hosts_entry() {
+  MINIKUBE_IP=$(minikube ip 2>/dev/null || true)
+  if [[ -z "$MINIKUBE_IP" ]]; then
+    echo "Não foi possível obter IP do Minikube. Pule a escrita em /etc/hosts e use instrução manual no final.";
+    return
+  fi
+  if grep -q "${INGRESS_HOST}" /etc/hosts; then
+    echo "/etc/hosts já contém ${INGRESS_HOST}. Verifique entrada existente.";
+    return
+  fi
+  echo "Irei adicionar a entrada no /etc/hosts: ${MINIKUBE_IP} ${INGRESS_HOST}"
+  read -r -p "Permito que o script escreva em /etc/hosts usando sudo? (y/N): " ans
+  if [[ "$ans" =~ ^[Yy]$ ]]; then
+    echo "Adicionando entrada em /etc/hosts..."
+    echo "${MINIKUBE_IP} ${INGRESS_HOST}" | sudo tee -a /etc/hosts >/dev/null
+    echo "Entrada adicionada."
+  else
+    echo "Você pode adicionar manualmente: sudo sh -c 'echo \"${MINIKUBE_IP} ${INGRESS_HOST}\" >> /etc/hosts'"
+  fi
+}
+
+# Parse CLI args for recreate flag
+for arg in "${@}"; do
+  case "$arg" in
+    --recreate) RECREATE_ENV=true ;;
+  esac
+done
+
 # ====================================================================================
-# Orquestração da Instalação
+# Orquestração da Instalação (fluxo principal)
 # ====================================================================================
 
 echo "### [FASE 0] Validando pré-requisitos da arquitetura..."
@@ -70,6 +159,20 @@ if ! minikube status >/dev/null 2>&1; then
   minikube start --driver=docker --memory=4096 --cpus=2
 else
   echo "Cluster Minikube já está em execução."
+fi
+
+# Check node resources and optionally resize with confirmation
+check_node_resources_or_prompt
+
+# --- Passo 1.5: Aplicar infra/dev para expor ingress (Ingress Controller já ativado pelo addon) ---
+apply_infra_dev
+
+# Optionally recreate environment (delete namespace) to get a clean Rancher install
+if [[ "$RECREATE_ENV" == true ]]; then
+  echo "Removendo namespace $NAMESPACE para recriar ambiente..."
+  kubectl delete namespace "$NAMESPACE" --ignore-not-found=true || true
+  # allow deletion to finish
+  sleep 5
 fi
 
 # --- Passo 2: Configuração do Ingress Controller (Nginx) ---
@@ -115,16 +218,10 @@ helm upgrade --install $RANCHER_HELM_RELEASE $RANCHER_HELM_CHART \
   --set rancherImageTag=$RANCHER_VERSION \
   --set ingress.tls.source=secret \
   --set ingress.ingressClassName=$INGRESS_CLASS_NAME
-  
 
 # --- Passo 8: Aguardar o Rollout do Rancher ---
 echo -e "\n### [FASE 8] Aguardando o deployment do Rancher ser concluído..."
 kubectl -n $NAMESPACE rollout status deployment/rancher --timeout=10m
-
-# --- Passo 9: Extração de Credenciais e Instruções de Acesso ---
-echo -e "\n### [FASE 9] Instalação concluída. Preparando instruções de acesso..."
-
-MINIKUBE_IP=$(minikube ip)
 
 # --- Passo 9: Extração de Credenciais e Instruções de Acesso ---
 echo -e "\n### [FASE 9] Instalação concluída. Preparando instruções de acesso..."
@@ -147,16 +244,52 @@ echo -e "   URL: https://$INGRESS_HOST"
 echo ""
 echo "3. Obtenha a senha de administrador:"
 
-# Tenta obter a senha de bootstrap. Se falhar, fornece o comando de reset.
+# Aguarda o pod do Rancher estar pronto antes de tentar obter a senha
+echo "   -> Aguardando pod do Rancher estar pronto..."
+kubectl wait --namespace $NAMESPACE --for=condition=ready pod -l app=rancher --timeout=300s
+
+# Tenta obter a senha de bootstrap com métodos alternativos
+BOOTSTRAP_PASSWORD=""
+
+# Método 1: Verificar se existe o secret bootstrap-secret
 if kubectl get secret --namespace $NAMESPACE bootstrap-secret &>/dev/null; then
-  BOOTSTRAP_PASSWORD=$(kubectl get secret --namespace $NAMESPACE bootstrap-secret -o go-template='{{.data.bootstrapPassword|base64decode}}')
+  BOOTSTRAP_PASSWORD=$(kubectl get secret --namespace $NAMESPACE bootstrap-secret -o go-template='{{.data.bootstrapPassword|base64decode}}' 2>/dev/null || echo "")
+fi
+
+# Método 2: Se não encontrou, tenta buscar nos logs do pod
+if [ -z "$BOOTSTRAP_PASSWORD" ]; then
+  echo "   -> Buscando senha nos logs do Rancher..."
+  POD_NAME=$(kubectl get pods -n $NAMESPACE -l app=rancher -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+  if [ -n "$POD_NAME" ]; then
+    # Busca por padrões de senha de bootstrap nos logs
+    BOOTSTRAP_PASSWORD=$(kubectl logs -n $NAMESPACE $POD_NAME 2>/dev/null | grep -i "bootstrap password" | tail -1 | awk '{print $NF}' || echo "")
+    if [ -z "$BOOTSTRAP_PASSWORD" ]; then
+      BOOTSTRAP_PASSWORD=$(kubectl logs -n $NAMESPACE $POD_NAME 2>/dev/null | grep -E "password.*[a-zA-Z0-9]{8,}" | tail -1 | grep -oE "[a-zA-Z0-9]{8,}" | tail -1 || echo "")
+    fi
+  fi
+fi
+
+# Método 3: Gerar nova senha usando reset-password
+if [ -z "$BOOTSTRAP_PASSWORD" ] && [ -n "$POD_NAME" ]; then
+  echo "   -> Gerando nova senha de bootstrap..."
+  BOOTSTRAP_PASSWORD=$(kubectl exec -n $NAMESPACE $POD_NAME -- reset-password 2>/dev/null | grep -E "New password:" | awk '{print $NF}' || echo "")
+fi
+
+# Exibe resultado
+if [ -n "$BOOTSTRAP_PASSWORD" ]; then
   echo "   -> Senha de bootstrap encontrada:"
+  echo "      Usuário: admin"
   echo "      Senha: $BOOTSTRAP_PASSWORD"
 else
-  echo "   -> O segredo 'bootstrap-secret' não foi encontrado (normal em reinstalações)."
-  echo "      Para redefinir a senha do usuário 'admin', execute o seguinte comando:"
-  POD_NAME=$(kubectl get pods -n $NAMESPACE -l app=rancher -o jsonpath='{.items[0].metadata.name}')
-  echo -e "\n      kubectl exec -n $NAMESPACE $POD_NAME -- reset-password\n"
+  echo "   -> Não foi possível obter a senha automaticamente."
+  echo "      Execute manualmente para obter/redefinir a senha:"
+  if [ -n "$POD_NAME" ]; then
+    echo -e "\n      kubectl exec -n $NAMESPACE $POD_NAME -- reset-password"
+  else
+    echo -e "\n      kubectl get pods -n $NAMESPACE -l app=rancher"
+    echo "      kubectl exec -n $NAMESPACE <POD_NAME> -- reset-password"
+  fi
+  echo -e "\n      OU verifique os logs:"
+  echo "      kubectl logs -n $NAMESPACE -l app=rancher | grep -i password"
 fi
 echo "======================================================================="
-sleep 40
