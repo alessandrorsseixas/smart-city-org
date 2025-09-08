@@ -1,0 +1,43 @@
+name: Deploy to Minikube
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    name: Deploy (self-hosted Minikube)
+    runs-on: [self-hosted, minikube]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure scripts are executable
+        run: chmod +x scripts/dev/*.sh
+
+      - name: Verify kubectl context
+        run: |
+          kubectl config current-context
+          kubectl get nodes
+
+      - name: Deploy base infra (redis, rabbitmq, mongo)
+        run: |
+          scripts/dev/deploy-redis.sh
+          scripts/dev/deploy-rabbitmq.sh
+          scripts/dev/deploy-mongodb.sh
+
+      - name: Deploy database and create n8n DB
+        run: |
+          scripts/dev/deploy-postgres.sh
+          kubectl apply -f k8s/overlays/dev/postgres/create-n8n-db-job.yaml
+          kubectl wait --for=condition=complete job/create-n8n-database -n smartcity --timeout=120s || true
+
+      - name: Deploy n8n
+        run: scripts/dev/deploy-n8n.sh
+
+      - name: Deploy keycloak
+        run: scripts/dev/deploy-keycloak.sh
+
+      - name: Verify all
+        run: kubectl get all -n smartcity
