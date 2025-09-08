@@ -32,6 +32,8 @@ jobs:
       # O 'working-directory' garante que o comando seguinte será executado
       # a partir da pasta da sua aplicação, usando o contexto correto.
       working-directory: ./Apps/house-control
-      # CORREÇÃO FINAL: Revertemos o comando para a sintaxe padrão do Linux/Bash ('date'),
-      # pois o log de erro atual confirma que o runner opera em um ambiente Linux.
+      # CORREÇÃO: Especificamos o uso do shell 'sh' em vez do 'bash' padrão.
+      # Isso resolve o erro em ambientes Linux mínimos onde /usr/bin/bash não existe,
+      # utilizando um shell POSIX padrão (/bin/sh) que é universalmente disponível.
+      shell: sh
       run: docker build . --file Dockerfile --tag "house-control:$(date +%s)"
