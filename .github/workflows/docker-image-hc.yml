@@ -32,8 +32,12 @@ jobs:
       # O 'working-directory' garante que o comando seguinte será executado
       # a partir da pasta da sua aplicação, usando o contexto correto.
       working-directory: ./Apps/house-control
+      # CORREÇÃO: Força a execução do comando usando o shell 'bash' em vez do PowerShell padrão.
+      # Isso evita o erro de política de execução de scripts do Windows.
+      shell: bash
       # O comando 'docker build' em si.
       # '.' indica que o contexto do build (onde o Dockerfile está) é o diretório atual (definido pelo working-directory).
       # '--file Dockerfile' especifica o nome do arquivo, embora seja o padrão.
       # '--tag' nomeia a imagem. Usamos 'house-control' e uma tag dinâmica com a data/hora para garantir unicidade.
       run: docker build . --file Dockerfile --tag house-control:$(date +%s)
+
