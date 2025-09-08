@@ -36,4 +36,5 @@ jobs:
       # Isso resolve o erro em ambientes Linux mínimos onde /usr/bin/bash não existe,
       # utilizando um shell POSIX padrão (/bin/sh) que é universalmente disponível.
       shell: sh
-      run: docker build . --file Dockerfile --tag "house-control:$(date +%s)"
+      run: docker build -f Apps/house-control/Dockerfile -t "house-control:$(date +%s)" .
+
