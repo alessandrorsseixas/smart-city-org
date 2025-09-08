@@ -1,18 +1,39 @@
+# Nome do Workflow: Exibido na aba "Actions" do repositório no GitHub.
 name: Docker Image CI House-Control
 
+# Gatilhos (Triggers): Define quando a automação será executada.
 on:
+  # Executa quando houver um push para a branch "main".
   push:
     branches: [ "main" ]
+  # Executa também quando um pull request for aberto ou atualizado para a branch "main".
   pull_request:
     branches: [ "main" ]
 
+# Trabalhos (Jobs): Define um ou mais jobs que rodam em sequência ou em paralelo.
 jobs:
-
+  # Nome do job. Você pode ter vários, como "build", "test", "deploy".
   build:
+    # Estratégia de execução: Define onde o job será executado.
+    # 'self-hosted' indica que ele deve ser executado em um runner que você mesmo configurou,
+    # em vez de uma máquina virtual gerenciada pelo GitHub.
+    runs-on: self-hosted
 
-    runs-on: ubuntu-latest
-
+    # Passos (Steps): Sequência de tarefas que compõem o job.
     steps:
-    - uses: actions/checkout@v4
+    # 1. Checkout do código-fonte
+    # Baixa o código do seu repositório para o ambiente do runner.
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # 2. Build da imagem Docker
+    # Constrói a imagem a partir do Dockerfile.
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+      # O 'working-directory' garante que o comando seguinte será executado
+      # a partir da pasta da sua aplicação, usando o contexto correto.
+      working-directory: ./Apps/house-control
+      # O comando 'docker build' em si.
+      # '.' indica que o contexto do build (onde o Dockerfile está) é o diretório atual (definido pelo working-directory).
+      # '--file Dockerfile' especifica o nome do arquivo, embora seja o padrão.
+      # '--tag' nomeia a imagem. Usamos 'house-control' e uma tag dinâmica com a data/hora para garantir unicidade.
+      run: docker build . --file Dockerfile --tag house-control:$(date +%s)
