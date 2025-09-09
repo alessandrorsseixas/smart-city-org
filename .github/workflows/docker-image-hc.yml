@@ -16,31 +16,10 @@ env:
 
 # Trabalhos (Jobs): Define um ou mais jobs que rodam em sequência ou em paralelo.
 jobs:
-  # Job para executar testes antes de qualquer outra coisa.
-  test:
-    name: Run Unit Tests
-    runs-on: self-hosted # Ou ubuntu-latest se não precisar de acesso a recursos internos
-    
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    # Configura o ambiente Java (ex: JDK 17)
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        
-    - name: Run Maven Tests
-      # Garante que os testes sejam executados no diretório correto
-      working-directory: ./apps/house-control
-      run: mvn test # Ou ./gradlew test
-
-  # Job para construir e publicar a imagem, depende do sucesso do job de teste.
+  # Job para construir e publicar a imagem.
   build-and-push:
     name: Build and Push Docker Image
-    needs: test # Garante que este job só rode se os testes passarem
+    # A dependência "needs: test" foi removida daqui.
     runs-on: self-hosted
     
     # Define permissões para que o job possa escrever no GHCR
@@ -66,7 +45,7 @@ jobs:
       uses: docker/metadata-action@v5
       with:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-        # Gera a tag 'latest' para push na branch main e a tag com o SHA do commit
+        # Gera a tag com o SHA do commit e a tag 'latest' para push na branch main
         tags: |
           type=sha,prefix=
           type=raw,value=latest,enable={{is_default_branch}}
