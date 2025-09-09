@@ -3,38 +3,88 @@ name: Docker Image CI House-Control
 
 # Gatilhos (Triggers): Define quando a automação será executada.
 on:
-  # Executa quando houver um push para a branch "main".
   push:
     branches: [ "main" ]
-  # Executa também quando um pull request for aberto ou atualizado para a branch "main".
   pull_request:
     branches: [ "main" ]
 
+# Define variáveis de ambiente para todo o workflow, evitando repetição.
+env:
+  REGISTRY: ghcr.io
+  # Formato: ghcr.io/SEU_USUARIO_OU_ORG/NOME_DA_IMAGEM
+  IMAGE_NAME: ${{ github.repository }}/house-control
+
 # Trabalhos (Jobs): Define um ou mais jobs que rodam em sequência ou em paralelo.
 jobs:
-  # Nome do job. Você pode ter vários, como "build", "test", "deploy".
-  build:
-    # Estratégia de execução: Define onde o job será executado.
-    # 'self-hosted' indica que ele deve ser executado em um runner que você mesmo configurou,
-    # em vez de uma máquina virtual gerenciada pelo GitHub.
-    runs-on: self-hosted
-
-    # Passos (Steps): Sequência de tarefas que compõem o job.
+  # Job para executar testes antes de qualquer outra coisa.
+  test:
+    name: Run Unit Tests
+    runs-on: self-hosted # Ou ubuntu-latest se não precisar de acesso a recursos internos
+    
     steps:
-    # 1. Checkout do código-fonte
-    # Baixa o código do seu repositório para o ambiente do runner.
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # 2. Build da imagem Docker
-    # Constrói a imagem a partir do Dockerfile.
-    - name: Build the Docker image
-      # O 'working-directory' garante que o comando seguinte será executado
-      # a partir da pasta da sua aplicação, usando o contexto correto.
+    # Configura o ambiente Java (ex: JDK 17)
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: Run Maven Tests
+      # Garante que os testes sejam executados no diretório correto
       working-directory: ./apps/house-control
-      # CORREÇÃO: Especificamos o uso do shell 'sh' em vez do 'bash' padrão.
-      # Isso resolve o erro em ambientes Linux mínimos onde /usr/bin/bash não existe,
-      # utilizando um shell POSIX padrão (/bin/sh) que é universalmente disponível.
-      shell: sh
-      run: docker build -f Dockerfile -t "house-control:$(date +%s)" .
+      run: mvn test # Ou ./gradlew test
 
+  # Job para construir e publicar a imagem, depende do sucesso do job de teste.
+  build-and-push:
+    name: Build and Push Docker Image
+    needs: test # Garante que este job só rode se os testes passarem
+    runs-on: self-hosted
+    
+    # Define permissões para que o job possa escrever no GHCR
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # Action oficial do Docker para login seguro no registry
+    - name: Log in to the Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    # Extrai metadados, como as tags da imagem, de forma inteligente
+    - name: Extract metadata (tags, labels) for Docker
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        # Gera a tag 'latest' para push na branch main e a tag com o SHA do commit
+        tags: |
+          type=sha,prefix=
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    # Action que configura o Buildx e habilita o cache
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    # Action principal que constrói e publica, utilizando cache.
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v6
+      with:
+        context: ./apps/house-control # Caminho para o Dockerfile
+        file: ./apps/house-control/Dockerfile
+        push: ${{ github.event_name != 'pull_request' }} # Só faz push se não for um PR
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha # Habilita cache a partir do cache do GitHub Actions
+        cache-to: type=gha,mode=max # Escreve o cache ao final
