@@ -39,8 +39,14 @@ WORKDIR /app
 # é uma camada de segurança essencial em ambientes conteinerizados.
 RUN addgroup -S spring && adduser -S spring -G spring
 
+# Cria o diretório de configuração e ajusta permissões para o usuário spring
+RUN mkdir -p /app/config && chown -R spring:spring /app/config
+
 # Alterna o contexto de execução para o usuário não-root recém-criado.
 USER spring:spring
+
+# Copia o arquivo de configuração application.yml para o diretório esperado
+COPY --from=build /app/src/main/resources/application.yml /app/config/application.yml
 
 # Copia o artefato .jar gerado no Stage 1 para a imagem final.
 # Copia especificamente o jar do house-control para garantir que seja o arquivo correto.

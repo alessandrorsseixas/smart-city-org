@@ -1,15 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://postgres.dev.smartcity.local:5432/smartcity
-    username: smartcity
-    password: smartcity123
-    driver-class-name: org.postgresql.Driver
-    hikari:
-      connection-timeout: 20000
-      maximum-pool-size: 10
-      minimum-idle: 5
-      idle-timeout: 300000
-      max-lifetime: 1200000
+    url: jdbc:postgresql://postgres.dev.smartcity.local:5432/house_control
+    username: postgres
+    password: postgres
   redis:
     host: localhost
     port: 6379
